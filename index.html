@@ -1,0 +1,1260 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SITALANG — Sistem Informasi Progres Naik Talang Tempurung KPH Kediri</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  :root{
+    --bg: #EDF0E5;
+    --surface: #FFFFFF;
+    --surface-alt: #F5F6EF;
+    --ink: #16241C;
+    --ink-soft: #3C4A40;
+    --ink-faint: #647062;
+    --primary: #1F4D3A;
+    --primary-light: #3D7A5C;
+    --primary-dark: #12291D;
+    --line: #DBE1D2;
+    --line-strong: #B9C3AB;
+    --target: #B5670E;
+    --target-bg: #FBEEDC;
+    --actual: #166B54;
+    --actual-bg: #E1F0E9;
+    --danger: #A6301F;
+    --danger-bg: #F8E5E1;
+    --success-bg: #E1F0E5;
+    --shadow: 0 1px 2px rgba(22,36,28,0.06), 0 4px 16px rgba(22,36,28,0.05);
+  }
+  html{ font-size:17px; }
+  html.text-large{ font-size:20px; }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:'Inter',sans-serif; -webkit-font-smoothing:antialiased; line-height:1.6;
+  }
+  h1,h2,h3,.display{ font-family:'Space Grotesk',sans-serif; letter-spacing:-0.01em; }
+  .mono{ font-family:'JetBrains Mono',monospace; }
+
+  .demo-switch{
+    display:flex; gap:0.5rem; padding:0.9rem 1.25rem; background:var(--primary-dark);
+    position:sticky; top:0; z-index:50; align-items:center; flex-wrap:wrap;
+  }
+  .demo-switch .label{ color:#A9BFAE; font-size:0.8rem; margin-right:0.4rem; }
+  .demo-switch button{
+    font-family:'Inter',sans-serif; font-size:0.9rem; font-weight:500;
+    padding:0.55rem 1rem; border-radius:1.4rem; border:1px solid transparent;
+    background:transparent; color:#C7D6CB; cursor:pointer; transition:all .15s;
+  }
+  .demo-switch button.active{ background:var(--surface); color:var(--primary-dark); }
+  .demo-switch button:not(.active):hover{ border-color:#3A5347; color:#fff; }
+  .a11y-toggle{ margin-left:auto; display:flex; gap:0.4rem; background:#0D2016; border-radius:1.4rem; padding:0.25rem; }
+  .a11y-toggle button{ padding:0.4rem 0.85rem; font-size:0.8rem; }
+  .a11y-toggle button.active{ background:var(--target); color:#fff; }
+
+  .view{ display:none; } .view.active{ display:block; }
+  .subview{ display:none; } .subview.active{ display:block; }
+
+  /* ============================================================ LOGIN */
+  .login-wrap{ min-height:640px; display:grid; grid-template-columns: 1fr 1fr; }
+  @media (max-width:820px){ .login-wrap{ grid-template-columns:1fr; } .login-brand{ min-height:220px; } }
+  .login-brand{ background:var(--primary-dark); color:#EAF0E8; padding:3.5rem 3rem; display:flex; flex-direction:column; justify-content:space-between; position:relative; overflow:hidden; }
+  .login-brand .mosaic-bg{ position:absolute; inset:auto -2.5rem -3.75rem auto; width:21rem; opacity:.35; display:grid; grid-template-columns:repeat(6,1fr); gap:6px; transform:rotate(-6deg); }
+  .login-brand .mosaic-bg div{ aspect-ratio:1; background:var(--primary-light); border-radius:2px; }
+  .login-brand .mosaic-bg div:nth-child(3n){ background:#5E8F72; }
+  .login-brand .mosaic-bg div:nth-child(5n){ background:#2E5A44; }
+  .brand-mark{ display:flex; align-items:center; gap:0.75rem; }
+  .brand-mark .stake{ width:2.1rem; height:2.1rem; background:var(--target); flex-shrink:0; clip-path: polygon(0 0, 100% 0, 100% 70%, 50% 100%, 0 70%); }
+  .brand-mark span{ font-size:1.2rem; font-weight:600; }
+  .login-brand h1{ font-size:2rem; font-weight:600; line-height:1.3; margin:2.5rem 0 0.75rem; max-width:22rem; position:relative; }
+  .login-brand p{ color:#C3D3C7; font-size:1rem; line-height:1.7; max-width:21rem; position:relative; }
+  .login-brand .foot{ font-size:0.8rem; color:#8FA592; position:relative; }
+
+  .login-form{ padding:3.5rem 4rem; display:flex; flex-direction:column; justify-content:center; background:var(--surface); }
+  .login-form .eyebrow{ font-size:0.8rem; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.08em; margin:0 0 0.4rem; }
+  .login-form h2{ font-size:1.6rem; margin:0 0 1.75rem; }
+  .role-toggle{ display:flex; background:var(--surface-alt); border:1px solid var(--line); border-radius:0.7rem; padding:0.25rem; margin-bottom:1.75rem; }
+  .role-toggle button{ flex:1; border:none; background:transparent; padding:0.75rem; font-size:0.95rem; font-weight:500; color:var(--ink-soft); border-radius:0.5rem; cursor:pointer; font-family:'Inter',sans-serif; }
+  .role-toggle button.active{ background:var(--surface); color:var(--primary); box-shadow:var(--shadow); }
+  .field{ margin-bottom:1.15rem; }
+  .field label{ display:block; font-size:0.95rem; font-weight:500; margin-bottom:0.4rem; color:var(--ink); }
+  .field input, .field select{ width:100%; padding:0.85rem 0.9rem; border:1px solid var(--line-strong); border-radius:0.6rem; font-size:0.95rem; font-family:'Inter',sans-serif; background:var(--surface-alt); color:var(--ink); min-height:2.9rem; }
+  .field input:focus{ outline:none; border-color:var(--primary-light); background:var(--surface); }
+  .btn-primary{ width:100%; padding:0.95rem; border:none; border-radius:0.6rem; background:var(--primary); color:#fff; font-size:1rem; font-weight:600; font-family:'Inter',sans-serif; cursor:pointer; margin-top:0.4rem; min-height:3.1rem; }
+  .btn-primary:hover{ background:var(--primary-dark); }
+  .login-hint{ font-size:0.85rem; color:var(--ink-soft); margin-top:1rem; line-height:1.7; }
+
+  /* ============================================================ SHELL */
+  .shell{ display:grid; grid-template-columns:15.5rem 1fr; min-height:700px; }
+  .sidebar{ background:var(--primary-dark); color:#DCE7DF; padding:1.5rem 1rem; display:flex; flex-direction:column; }
+  .sidebar .brand-mark{ padding:0 0.5rem; margin-bottom:1.75rem; color:#fff; }
+  .sidebar .brand-mark .stake{ width:1.5rem; height:1.5rem; }
+  .sidebar .brand-mark span{ font-size:1.05rem; }
+  .nav-group{ margin-bottom:1.4rem; }
+  .nav-label{ font-size:0.75rem; text-transform:uppercase; letter-spacing:.08em; color:#8FA592; padding:0 0.6rem; margin-bottom:0.5rem; }
+  .nav-item{ display:flex; align-items:center; gap:0.7rem; padding:0.75rem 0.6rem; border-radius:0.6rem; font-size:0.95rem; font-weight:500; color:#D3E1D7; cursor:pointer; margin-bottom:0.2rem; }
+  .nav-item svg{ width:1.2rem; height:1.2rem; flex-shrink:0; opacity:.9; }
+  .nav-item.active{ background:var(--primary-light); color:#fff; }
+  .nav-item:not(.active):hover{ background:#264A38; }
+  .sidebar-foot{ margin-top:auto; padding:0.75rem 0.6rem; border-top:1px solid #2A4A38; }
+  .user-chip{ display:flex; align-items:center; gap:0.6rem; }
+  .user-chip .av{ width:2.2rem; height:2.2rem; border-radius:50%; background:var(--target); color:#fff; display:flex; align-items:center; justify-content:center; font-size:0.85rem; font-weight:600; flex-shrink:0; }
+  .user-chip .info p{ margin:0; font-size:0.9rem; color:#fff; font-weight:500; }
+  .user-chip .info span{ font-size:0.78rem; color:#A9BFAE; }
+
+  .main{ padding:1.75rem 2rem; }
+  .topbar{ display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1.5rem; flex-wrap:wrap; gap:0.75rem; }
+  .topbar h1{ font-size:1.5rem; margin:0 0 0.25rem; }
+  .topbar .sub{ font-size:0.95rem; color:var(--ink-soft); }
+  .topbar .date{ font-size:0.85rem; color:var(--ink-soft); background:var(--surface); border:1px solid var(--line); padding:0.5rem 0.85rem; border-radius:0.6rem; white-space:nowrap; }
+
+  .cards-row{ display:grid; grid-template-columns:repeat(4,1fr); gap:0.9rem; margin-bottom:1.6rem; }
+  @media (max-width:1100px){ .cards-row{ grid-template-columns:repeat(2,1fr); } }
+  .metric-card{ background:var(--surface); border:1px solid var(--line); border-radius:0.85rem; padding:1.1rem 1.2rem; box-shadow:var(--shadow); }
+  .metric-card .label{ font-size:0.85rem; color:var(--ink-soft); margin:0 0 0.5rem; font-weight:500; }
+  .metric-card .value{ font-size:2rem; font-weight:600; margin:0; font-family:'Space Grotesk',sans-serif; }
+  .metric-card .delta{ font-size:0.8rem; margin-top:0.4rem; display:inline-block; padding:0.15rem 0.6rem; border-radius:1rem; font-weight:500; }
+  .delta.up{ background:var(--success-bg); color:#1F5A32; }
+  .delta.warn{ background:var(--target-bg); color:#7A4A0F; }
+  .delta.flat{ background:var(--surface-alt); color:var(--ink-soft); }
+
+  .grid-2col{ display:grid; grid-template-columns:1.5fr 1fr; gap:1.1rem; align-items:start; }
+  @media (max-width:1000px){ .grid-2col{ grid-template-columns:1fr; } }
+  .panel{ background:var(--surface); border:1px solid var(--line); border-radius:0.85rem; box-shadow:var(--shadow); padding:1.3rem 1.4rem; margin-bottom:1.1rem; }
+  .panel-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem; }
+  .panel-head h3{ font-size:1.1rem; margin:0; }
+  .panel-head .legend{ display:flex; gap:0.9rem; font-size:0.85rem; color:var(--ink-soft); flex-wrap:wrap; }
+  .legend .dot{ width:0.55rem; height:0.55rem; border-radius:2px; display:inline-block; margin-right:0.3rem; }
+
+  .bkph-block{ margin-bottom:1.2rem; } .bkph-block:last-child{ margin-bottom:0; }
+  .bkph-title{ font-size:0.95rem; font-weight:600; color:var(--primary); margin:0 0 0.6rem; }
+  .rph-row{ margin-bottom:0.65rem; } .rph-row:last-child{ margin-bottom:0; }
+  .rph-label{ font-size:0.85rem; color:var(--ink-soft); margin:0 0 0.4rem; font-weight:500; }
+  .petak-row{ display:flex; gap:0.45rem; flex-wrap:wrap; }
+  .petak{ width:3.6rem; height:3.6rem; border-radius:0.4rem; position:relative; overflow:hidden; background:var(--surface-alt); border:1px solid var(--line-strong); }
+  .petak .fill{ position:absolute; left:0; right:0; bottom:0; }
+  .petak.low .fill{ background:#E4A377; } .petak.mid .fill{ background:#EDC262; } .petak.high .fill{ background:#78BC98; }
+  .petak .code{ position:absolute; top:0.25rem; left:0.3rem; font-size:0.68rem; font-weight:600; color:var(--ink); z-index:2; }
+  .petak .pct{ position:absolute; bottom:0.2rem; right:0.3rem; font-size:0.62rem; z-index:2; color:var(--ink); font-family:'JetBrains Mono',monospace; }
+
+  .chart-box{ height:11rem; display:flex; align-items:flex-end; gap:0.9rem; padding-top:1.6rem; border-bottom:1px solid var(--line); }
+  .chart-col{ flex:1; display:flex; flex-direction:column; align-items:center; gap:0.25rem; justify-content:flex-end; height:100%; }
+  .bar-pair{ display:flex; gap:0.35rem; align-items:flex-end; height:100%; }
+  .bar{ width:1.1rem; border-radius:3px 3px 0 0; position:relative; }
+  .bar.target{ background:var(--target); opacity:.55; } .bar.actual{ background:var(--actual); }
+  .bar-val{ position:absolute; top:-1.15rem; left:50%; transform:translateX(-50%); font-size:0.68rem; font-weight:600; white-space:nowrap; font-family:'JetBrains Mono',monospace; }
+  .bar-val.t-val{ color:var(--target); } .bar-val.a-val{ color:var(--actual); }
+  .chart-col .m{ font-size:0.75rem; color:var(--ink-soft); margin-top:0.4rem; }
+
+  table{ width:100%; border-collapse:collapse; font-size:0.9rem; }
+  th{ text-align:left; color:var(--ink-soft); font-weight:600; font-size:0.78rem; text-transform:uppercase; letter-spacing:.03em; padding:0 0.5rem 0.6rem; border-bottom:1px solid var(--line); }
+  td{ padding:0.65rem 0.5rem; border-bottom:1px solid var(--line); color:var(--ink); }
+  tr:last-child td{ border-bottom:none; }
+  .badge{ font-size:0.78rem; padding:0.2rem 0.6rem; border-radius:1rem; font-weight:600; }
+  .badge.ok{ background:var(--success-bg); color:#1F5A32; }
+  .badge.pending{ background:var(--target-bg); color:#7A4A0F; }
+  .badge.bad{ background:var(--danger-bg); color:var(--danger); }
+
+  .btn-ghost{ font-size:0.88rem; font-weight:600; color:var(--primary); background:var(--surface-alt); border:1px solid var(--line-strong); padding:0.6rem 1rem; border-radius:0.6rem; cursor:pointer; display:inline-flex; align-items:center; gap:0.4rem; min-height:2.7rem; }
+  .btn-ghost:hover{ background:var(--surface); }
+  .btn-ghost.big{ font-size:1rem; padding:0.85rem 1.4rem; min-height:3.2rem; }
+
+  /* ---------- input form ---------- */
+  .form-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:1rem; }
+  @media (max-width:700px){ .form-grid{ grid-template-columns:1fr; } }
+  .form-grid .full{ grid-column:1/-1; }
+  select{ width:100%; padding:0.85rem 0.9rem; border:1px solid var(--line-strong); border-radius:0.6rem; font-size:0.95rem; font-family:'Inter',sans-serif; background:var(--surface-alt); color:var(--ink); appearance:none; background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="10" height="6"><path d="M0 0l5 6 5-6z" fill="%233C4A40"/></svg>'); background-repeat:no-repeat; background-position:right 0.9rem center; min-height:2.9rem; }
+  input[type=date],input[type=number],input[type=text],input[type=password]{ min-height:2.9rem; }
+  textarea{ width:100%; padding:0.85rem 0.9rem; border:1px solid var(--line-strong); border-radius:0.6rem; font-size:0.95rem; font-family:'Inter',sans-serif; background:var(--surface-alt); resize:vertical; min-height:4.5rem; }
+  .readonly-box{ padding:0.85rem 0.9rem; border:1px dashed var(--line-strong); border-radius:0.6rem; background:var(--surface-alt); font-size:0.95rem; color:var(--ink-soft); font-weight:500; }
+  .dropzone{ border:2px dashed var(--line-strong); border-radius:0.7rem; padding:1.7rem; text-align:center; color:var(--ink-soft); font-size:0.9rem; background:var(--surface-alt); }
+  .dropzone strong{ color:var(--primary); font-weight:600; }
+
+  .field-inline{ display:flex; gap:1rem; align-items:flex-end; grid-column:1/-1; }
+  .field-inline .field{ flex:1; margin-bottom:0; }
+  .target-badge{ display:inline-flex; align-items:center; gap:0.4rem; background:var(--target-bg); color:#7A4A0F; font-size:0.82rem; font-weight:600; padding:0 0.85rem; border-radius:0.6rem; border:1px solid #EFCFA0; white-space:nowrap; min-height:2.9rem; }
+  .target-badge svg{ width:1rem; height:1rem; flex-shrink:0; }
+  .capaian-block{ grid-column:1/-1; }
+  .capaian-grid{ display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+  .capaian-result{ margin-top:0.65rem; font-size:0.88rem; font-weight:600; color:var(--actual); background:var(--actual-bg); display:inline-block; padding:0.4rem 0.85rem; border-radius:0.5rem; }
+  .rencana-display{ width:100%; padding:0.85rem 0.9rem; border:1px solid var(--line); border-radius:0.6rem; font-size:0.95rem; font-family:'JetBrains Mono',monospace; background:var(--surface-alt); color:var(--ink-soft); min-height:2.9rem; display:flex; align-items:center; }
+  .form-actions{ display:flex; gap:0.8rem; margin-top:1.2rem; grid-column:1/-1; }
+  .form-actions .btn-primary{ margin-top:0; }
+  .btn-secondary{ flex:0 0 auto; padding:0.95rem 1.6rem; border:1px solid var(--line-strong); border-radius:0.6rem; background:var(--surface); color:var(--ink-soft); font-size:1rem; font-weight:600; font-family:'Inter',sans-serif; cursor:pointer; min-height:3.1rem; }
+  .btn-secondary:hover{ background:var(--surface-alt); }
+  .status-label{ font-size:0.85rem; font-weight:600; }
+  .status-label.ok{ color:#1F5A32; }
+  .status-label.bad{ color:var(--danger); }
+  .btn-export{ font-size:0.88rem; font-weight:600; color:var(--ink-soft); background:var(--surface); border:1px solid var(--line-strong); padding:0.6rem 1rem; border-radius:0.6rem; cursor:pointer; display:inline-flex; align-items:center; gap:0.5rem; min-height:2.7rem; margin-bottom:0.9rem; }
+  .btn-export:hover{ background:var(--surface-alt); }
+  .btn-export svg{ width:1.05rem; height:1.05rem; }
+  .export-note{ font-size:0.8rem; color:var(--ink-faint); margin:0.7rem 0 0; }
+  .status-card{ display:flex; gap:0.9rem; padding:1rem 1.1rem; border-radius:0.7rem; margin-bottom:0.75rem; align-items:flex-start; }
+  .status-card.invalid{ background:var(--danger-bg); } .status-card.valid{ background:var(--success-bg); }
+  .status-card .icn{ width:2.1rem; height:2.1rem; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .status-card.invalid .icn{ background:#EBC1B5; color:var(--danger); } .status-card.valid .icn{ background:#BFE0C4; color:#1F5A32; }
+  .status-card h4{ margin:0 0 0.2rem; font-size:0.95rem; }
+  .status-card.invalid h4{ color:var(--danger); } .status-card.valid h4{ color:#1F5A32; }
+  .status-card p{ margin:0; font-size:0.88rem; color:var(--ink-soft); line-height:1.65; }
+  .status-card .action{ margin-top:0.5rem; }
+
+  /* ============================================================ RESPONSIVE / MOBILE (untuk akses Mandor via HP) */
+  @media (max-width:900px){
+    .shell{ grid-template-columns:1fr; min-height:0; }
+    .sidebar{
+      flex-direction:row; align-items:center; overflow-x:auto; -webkit-overflow-scrolling:touch;
+      padding:0.7rem 0.85rem; gap:0.35rem; position:sticky; top:0; z-index:40;
+    }
+    .sidebar::-webkit-scrollbar{ display:none; }
+    .sidebar .brand-mark{ display:none; }
+    .nav-group{ display:flex; align-items:center; gap:0.35rem; margin-bottom:0; flex-shrink:0; }
+    .nav-label{ display:none; }
+    .nav-item{
+      flex-direction:column; gap:0.25rem; padding:0.55rem 0.75rem; font-size:0.7rem;
+      white-space:nowrap; flex-shrink:0; text-align:center; margin-bottom:0;
+    }
+    .nav-item svg{ width:1.15rem; height:1.15rem; }
+    .sidebar-foot{ display:none; }
+    .main{ padding:1.1rem 1rem 2rem; }
+  }
+  @media (max-width:640px){
+    html{ font-size:15.5px; }
+    .demo-switch{ padding:0.7rem 0.9rem; }
+    .demo-switch .label{ display:none; }
+    .a11y-toggle{ margin-left:0; }
+    .topbar{ flex-direction:column; align-items:stretch; }
+    .topbar .date{ align-self:flex-start; }
+    .cards-row{ grid-template-columns:1fr 1fr; gap:0.6rem; }
+    .metric-card{ padding:0.9rem 1rem; }
+    .metric-card .value{ font-size:1.5rem; }
+    .panel{ padding:1.05rem 1rem; }
+    .panel table{ display:block; overflow-x:auto; -webkit-overflow-scrolling:touch; white-space:nowrap; }
+    .field-inline{ flex-direction:column; align-items:stretch; gap:0.75rem; }
+    .target-badge{ min-height:auto; padding:0.65rem 0.85rem; white-space:normal; line-height:1.4; }
+    .form-actions{ flex-direction:column; }
+    .form-actions .btn-primary, .form-actions .btn-secondary{ width:100%; }
+    .dropzone{ padding:1.2rem 0.9rem; }
+    .petak{ width:3.1rem; height:3.1rem; }
+    .login-form{ padding:2.25rem 1.5rem; }
+    .btn-export{ width:100%; justify-content:center; }
+    .target-year-table{ min-width:46rem; font-size:0.78rem; }
+    .target-year-table input{ width:2.8rem; }
+    .target-year-legend{ font-size:0.72rem; gap:0.7rem; }
+  }
+  @media (max-width:640px){
+    .acc-bkph-head{ flex-wrap:wrap; gap:0.6rem 0.8rem; padding:0.85rem 0.9rem; }
+    .acc-bkph-head .idn{ width:2.2rem; height:2.2rem; font-size:0.78rem; }
+    .acc-bkph-head .bar-wrap{ width:100%; order:5; }
+    .acc-bkph-head .rphcount{ margin-left:auto; }
+    .acc-rph-head{ flex-wrap:wrap; gap:0.4rem 0.7rem; }
+    .acc-rph-head .bar-wrap{ width:100%; order:5; }
+    .acc-rph-head .tv{ margin-left:auto; }
+    .acc-actions{ flex-wrap:wrap; }
+  }
+  @media (max-width:420px){
+    .cards-row{ grid-template-columns:1fr; }
+    .capaian-grid{ grid-template-columns:1fr; }
+  }
+  .gallery{ display:grid; grid-template-columns:repeat(auto-fill, minmax(11.5rem, 1fr)); gap:0.9rem; }
+  .photo-card{ background:var(--surface); border:1px solid var(--line); border-radius:0.7rem; overflow:hidden; box-shadow:var(--shadow); }
+  .photo-thumb{ height:7rem; display:flex; align-items:center; justify-content:center; color:#fff; }
+  .photo-card .body{ padding:0.75rem 0.85rem; }
+  .photo-card .body p{ margin:0 0 0.15rem; font-size:0.85rem; font-weight:600; }
+  .photo-card .body span{ font-size:0.75rem; color:var(--ink-soft); }
+
+  /* ---------- map schematic ---------- */
+  .map-wrap{ display:grid; grid-template-columns:1.4fr 1fr; gap:1.1rem; }
+  @media (max-width:900px){ .map-wrap{ grid-template-columns:1fr; } }
+  .map-region{ border-radius:0.9rem; padding:1.2rem; margin-bottom:0.8rem; position:relative; }
+  .map-region.north{ background:#E1EEDD; }
+  .map-region.south{ background:#DDEDE4; }
+  .map-region h4{ margin:0 0 0.8rem; font-size:0.95rem; color:var(--primary-dark); }
+  .map-pins{ display:flex; gap:0.9rem; flex-wrap:wrap; }
+  .pin{ display:flex; flex-direction:column; align-items:center; gap:0.3rem; font-size:0.78rem; color:var(--ink-soft); font-weight:500; }
+  .pin .dot{ width:1.4rem; height:1.4rem; border-radius:50% 50% 50% 0; transform:rotate(45deg); }
+  .pin .dot.high{ background:#4E9C71; } .pin .dot.mid{ background:#D6A227; } .pin .dot.low{ background:#C86A3C; }
+
+  /* ---------- target editor ---------- */
+  .target-row{ display:grid; grid-template-columns: 1.2fr 1fr 1.1fr; gap:0.8rem; align-items:center; padding:0.7rem 0; border-bottom:1px solid var(--line); }
+  .target-row:last-child{ border-bottom:none; }
+  .target-row .name{ font-size:0.92rem; font-weight:500; }
+  .target-row input{ width:100%; padding:0.6rem 0.7rem; border:1px solid var(--line-strong); border-radius:0.5rem; font-size:0.92rem; background:var(--surface-alt); min-height:2.6rem; }
+  .target-pohon-field{ display:flex; align-items:center; gap:0.4rem; }
+  .target-pohon-field input{ min-width:0; }
+  .target-pohon-field .unit{ font-size:0.8rem; color:var(--ink-soft); white-space:nowrap; }
+  .target-row .realisasi-note{ font-size:0.82rem; color:var(--ink-soft); }
+  .target-row .realisasi-note strong{ color:var(--actual); }
+  .target-row .realisasi-note.pending{ color:var(--ink-faint); font-style:italic; }
+
+  .target-year-wrap{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  .target-year-table{ border-collapse:collapse; font-size:0.85rem; min-width:60rem; width:100%; }
+  .target-year-table th, .target-year-table td{ padding:0.6rem 0.5rem; text-align:center; border-bottom:1px solid var(--line); white-space:nowrap; }
+  .target-year-table th{ color:var(--ink-soft); font-weight:600; font-size:0.7rem; text-transform:uppercase; letter-spacing:.03em; }
+  .target-year-table th:first-child, .target-year-table td:first-child{ text-align:left; position:sticky; left:0; background:var(--surface); z-index:2; padding-left:0.2rem; font-weight:600; box-shadow:1px 0 0 var(--line); }
+  .target-year-table th.current, .target-year-table td.current{ background:var(--target-bg); }
+  .target-year-table th:first-child.current, .target-year-table td:first-child.current{ background:var(--surface); }
+  .target-year-table .locked{ color:var(--ink-faint); font-family:'JetBrains Mono',monospace; font-size:0.8rem; }
+  .target-year-table input{ width:3.6rem; padding:0.35rem 0.3rem; text-align:center; border:1px solid var(--line-strong); border-radius:0.4rem; font-size:0.82rem; min-height:2.15rem; background:var(--surface-alt); }
+  .cell-pct{ font-weight:600; }
+  .cell-sub{ font-size:0.66rem; color:var(--ink-faint); font-family:'JetBrains Mono',monospace; margin-top:0.15rem; }
+  .cell-pohon-input{ display:flex; flex-direction:column; align-items:center; gap:0.15rem; }
+  .cell-pohon-input .unit-sm{ font-size:0.62rem; color:var(--ink-faint); }
+  .target-year-legend{ display:flex; gap:1.2rem; font-size:0.8rem; color:var(--ink-soft); margin-bottom:0.9rem; flex-wrap:wrap; }
+  .target-year-legend span{ display:inline-flex; align-items:center; gap:0.4rem; }
+  .target-year-legend i{ width:0.65rem; height:0.65rem; border-radius:2px; display:inline-block; }
+
+  /* ---------- export ---------- */
+  .choice-row{ display:flex; gap:0.75rem; margin-bottom:1.1rem; flex-wrap:wrap; }
+  .choice{ flex:1; min-width:9rem; border:2px solid var(--line); border-radius:0.75rem; padding:1rem; cursor:pointer; text-align:center; background:var(--surface-alt); }
+  .choice.selected{ border-color:var(--primary); background:var(--actual-bg); }
+  .choice .ic{ font-size:1.6rem; margin-bottom:0.3rem; }
+  .choice p{ margin:0; font-size:0.9rem; font-weight:600; color:var(--ink); }
+
+  /* ---------- user mgmt ---------- */
+  .user-row-name{ display:flex; align-items:center; gap:0.6rem; }
+  .user-row-name .av{ width:2rem; height:2rem; border-radius:50%; background:var(--primary-light); color:#fff; display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:600; }
+
+  /* ============================================================ PROGRES PER PETAK — ACCORDION (v3) */
+  .kph-total-strip{ display:flex; align-items:center; justify-content:space-between; background:var(--primary-dark); color:#EAF0E8; border-radius:0.85rem; padding:1.1rem 1.4rem; margin-bottom:1.1rem; flex-wrap:wrap; gap:0.6rem 1.6rem; }
+  .kph-total-strip .seg{ padding-right:1.6rem; border-right:1px solid #2A4A38; }
+  .kph-total-strip .seg:last-child{ border-right:none; padding-right:0; }
+  .kph-total-strip .t{ font-size:0.78rem; color:#A9BFAE; margin:0 0 0.2rem; text-transform:uppercase; letter-spacing:.06em; }
+  .kph-total-strip .v{ font-family:'Space Grotesk',sans-serif; font-size:1.4rem; font-weight:600; margin:0; }
+
+  .acc-actions{ display:flex; justify-content:flex-end; gap:0.5rem; margin-bottom:0.7rem; }
+  .acc-bkph{ border:1px solid var(--line); border-radius:0.85rem; margin-bottom:0.7rem; overflow:hidden; background:var(--surface); }
+  .acc-bkph-head{ display:flex; align-items:center; gap:1rem; padding:1rem 1.2rem; cursor:pointer; user-select:none; }
+  .acc-bkph-head:hover{ background:var(--surface-alt); }
+  .acc-bkph-head .chev{ width:1.1rem; height:1.1rem; flex-shrink:0; transition:transform .18s; color:var(--ink-faint); }
+  .acc-bkph.open > .acc-bkph-head .chev{ transform:rotate(90deg); }
+  .acc-bkph-head .idn{ width:2.6rem; height:2.6rem; border-radius:0.6rem; background:var(--primary); color:#fff; display:flex; align-items:center; justify-content:center; font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:0.9rem; flex-shrink:0; }
+  .acc-bkph-head .nm{ flex:1; min-width:8rem; }
+  .acc-bkph-head .nm h4{ margin:0; font-size:1.02rem; font-family:'Space Grotesk',sans-serif; }
+  .acc-bkph-head .nm span{ font-size:0.8rem; color:var(--ink-soft); }
+  .acc-bkph-head .bar-wrap{ width:9rem; flex-shrink:0; }
+  .acc-bkph-head .bar-wrap .bar-bg{ height:0.5rem; border-radius:1rem; background:var(--surface-alt); border:1px solid var(--line); overflow:hidden; }
+  .acc-bkph-head .bar-wrap .bar-fg{ height:100%; background:var(--actual); border-radius:1rem; }
+  .acc-bkph-head .bar-wrap .lbl{ font-size:0.75rem; color:var(--ink-soft); margin-top:0.25rem; font-family:'JetBrains Mono',monospace; }
+  .acc-bkph-head .rphcount{ font-size:0.78rem; color:var(--ink-faint); white-space:nowrap; background:var(--surface-alt); border:1px solid var(--line); border-radius:1rem; padding:0.3rem 0.7rem; flex-shrink:0; }
+  .acc-bkph-body{ display:none; border-top:1px solid var(--line); padding:0.4rem 1.2rem 1rem; }
+  .acc-bkph.open > .acc-bkph-body{ display:block; }
+
+  .acc-rph{ border-top:1px solid var(--line); }
+  .acc-rph:first-child{ border-top:none; }
+  .acc-rph-head{ display:flex; align-items:center; gap:0.9rem; padding:0.8rem 0.3rem; cursor:pointer; }
+  .acc-rph-head:hover .rph-nm{ color:var(--primary); }
+  .acc-rph-head .chev{ width:0.9rem; height:0.9rem; color:var(--ink-faint); flex-shrink:0; transition:transform .18s; }
+  .acc-rph.open > .acc-rph-head .chev{ transform:rotate(90deg); }
+  .acc-rph-head .rph-nm{ flex:1; font-size:0.92rem; font-weight:500; min-width:8rem; }
+  .acc-rph-head .rph-nm small{ display:block; font-weight:400; color:var(--ink-faint); font-size:0.78rem; margin-top:0.1rem; }
+  .acc-rph-head .bar-wrap{ width:8rem; flex-shrink:0; }
+  .acc-rph-head .tv{ font-size:0.82rem; color:var(--ink-soft); font-family:'JetBrains Mono',monospace; white-space:nowrap; }
+  .acc-rph-body{ display:none; padding:0.2rem 0.3rem 0.9rem 1.9rem; }
+  .acc-rph.open > .acc-rph-body{ display:block; }
+  .acc-rph-body .petak-row{ margin-top:0.3rem; }
+
+  .petak.clickable{ cursor:pointer; }
+  .petak .cam{ position:absolute; top:0.22rem; right:0.28rem; width:0.85rem; height:0.85rem; z-index:2; opacity:.85; color:var(--ink); }
+
+  .modal-mask{ display:none; position:fixed; inset:0; background:rgba(18,41,29,0.55); z-index:200; align-items:center; justify-content:center; padding:1.5rem; }
+  .modal-mask.open{ display:flex; }
+  .modal-card{ background:var(--surface); border-radius:0.9rem; max-width:26rem; width:100%; overflow:hidden; box-shadow:0 12px 40px rgba(0,0,0,.25); }
+  .modal-photo{ height:12rem; display:flex; align-items:center; justify-content:center; color:#fff; }
+  .modal-body{ padding:1.2rem 1.3rem; }
+  .modal-body h4{ margin:0 0 0.3rem; font-size:1.05rem; }
+  .modal-body p{ margin:0 0 0.15rem; font-size:0.88rem; color:var(--ink-soft); }
+  .modal-close{ display:flex; justify-content:flex-end; padding:0.7rem 0.9rem 0; }
+  .modal-close button{ border:none; background:var(--surface-alt); border-radius:0.5rem; width:2rem; height:2rem; cursor:pointer; color:var(--ink-soft); font-size:1rem; }
+
+  /* ---------- riwayat thumb ---------- */
+  .thumb-sq{ width:2.1rem; height:2.1rem; border-radius:0.35rem; flex-shrink:0; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; color:#fff; }
+  .thumb-sq.empty{ background:var(--surface-alt); border:1px dashed var(--line-strong); color:var(--ink-faint); }
+
+  /* ---------- peta / gps ---------- */
+  #leafletMap{ height:26rem; border-radius:0.9rem; border:1px solid var(--line); }
+  .gps-chip{ font-family:'JetBrains Mono',monospace; font-size:0.76rem; color:var(--ink-soft); background:var(--surface-alt); border:1px solid var(--line); border-radius:0.4rem; padding:0.15rem 0.45rem; display:inline-block; }
+  .leaflet-popup-content b{ font-family:'Space Grotesk',sans-serif; }
+
+  /* ---------- export unified ---------- */
+  .export-hint{ font-size:0.85rem; color:#7A4A0F; background:var(--target-bg); border:1px solid #EFCFA0; border-radius:0.6rem; padding:0.7rem 0.9rem; margin-bottom:1rem; }
+</style>
+</head>
+<body>
+
+<div class="demo-switch">
+  <span class="label">Pratinjau layar —</span>
+  <button class="active" data-view="login">Login</button>
+  <button data-view="dashboard">Dashboard (KPH)</button>
+  <button data-view="input">Input Data (KRPH / Asper)</button>
+  <div class="a11y-toggle">
+    <button class="active" data-size="normal">Teks normal</button>
+    <button data-size="large">Teks besar</button>
+  </div>
+</div>
+
+<!-- ============================================================ LOGIN ============================================================ -->
+<section class="view active" id="view-login">
+  <div class="login-wrap">
+    <div class="login-brand">
+      <div>
+        <div class="brand-mark"><div class="stake"></div><span>SITALANG</span></div>
+        <h1>Progres naik talang tempurung, terpantau per petak.</h1>
+        <p>Sistem informasi dashboard untuk KPH Kediri — mencatat realisasi lapangan dan memantau capaian terhadap target, dari petak sampai rekap kesatuan.</p>
+      </div>
+      <div class="foot mono">KPH KEDIRI · PERHUTANI</div>
+      <div class="mosaic-bg">
+        <div></div><div></div><div></div><div></div><div></div><div></div>
+        <div></div><div></div><div></div><div></div><div></div><div></div>
+        <div></div><div></div><div></div><div></div><div></div><div></div>
+        <div></div><div></div><div></div><div></div><div></div><div></div>
+      </div>
+    </div>
+    <div class="login-form">
+      <p class="eyebrow">Masuk sistem</p>
+      <h2>Selamat datang kembali</h2>
+      <div class="role-toggle">
+        <button class="active" id="role-krph">KRPH / Asper</button>
+        <button id="role-kph">KPH</button>
+      </div>
+      <div class="field"><label>NIK / Username</label><input type="text" placeholder="Contoh: krph.kalipang"></div>
+      <div class="field"><label>Kata sandi</label><input type="password" placeholder="••••••••"></div>
+      <button class="btn-primary" onclick="doLogin()">Masuk</button>
+      <p class="login-hint">Lupa kata sandi? Hubungi administrator sistem di kantor KPH Kediri.<br>Akun KRPH/Asper hanya dapat mengakses input dan progres wilayah kerjanya sendiri.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ DASHBOARD (KPH) SHELL ============================================================ -->
+<section class="view" id="view-dashboard">
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="brand-mark"><div class="stake"></div><span>SITALANG</span></div>
+      <div class="nav-group">
+        <p class="nav-label">Monitoring</p>
+        <div class="nav-item active" data-sub="ringkasan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Ringkasan &amp; progres per petak</div>
+        <div class="nav-item" data-sub="peta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 20l-6-3V4l6 3 6-3 6 3v13l-6-3-6 3z"/></svg>Peta sebaran</div>
+      </div>
+      <div class="nav-group">
+        <p class="nav-label">Perencanaan</p>
+        <div class="nav-item" data-sub="target"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8"/></svg>Target progres</div>
+        <div class="nav-item" data-sub="export"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>Export laporan</div>
+      </div>
+      <div class="nav-group">
+        <p class="nav-label">Administrasi</p>
+        <div class="nav-item" data-sub="user"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="7" r="3.2"/><path d="M2.5 20a6.5 6.5 0 0113 0"/><circle cx="17.5" cy="8.5" r="2.4"/><path d="M15.5 12.2a5.2 5.2 0 016 4.9"/></svg>Manajemen user</div>
+      </div>
+      <div class="sidebar-foot">
+        <div class="user-chip"><div class="av">SW</div><div class="info"><p>KPH Kediri</p><span>Administrator</span></div></div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <!-- ===== RINGKASAN & PROGRES PER PETAK (digabung, tidak lagi terpisah) ===== -->
+      <div class="subview active" id="dash-ringkasan">
+        <div class="topbar">
+          <div><h1>Ringkasan progres — Juni 2026</h1><p class="sub">Naik talang tempurung, seluruh BKPH KPH Kediri — 117.834,22 Ha · 9 BKPH · 44 RPH</p></div>
+          <div class="date mono">30 Jun 2026 · Data terkini 08:40 WIB</div>
+        </div>
+        <div class="cards-row">
+          <div class="metric-card"><p class="label">Total petak dipantau</p><p class="value">312</p><span class="delta flat">9 BKPH · 44 RPH</span></div>
+          <div class="metric-card"><p class="label">Rata-rata realisasi</p><p class="value" id="avgRealisasiValue">—</p><span class="delta up" id="avgRealisasiDelta">target bulan ini 70%</span></div>
+          <div class="metric-card"><p class="label">Petak selesai (100%)</p><p class="value">74</p><span class="delta up">+11 dari minggu lalu</span></div>
+          <div class="metric-card"><p class="label">Belum ada input</p><p class="value">23</p><span class="delta warn">perlu ditindaklanjuti</span></div>
+        </div>
+        <div class="grid-2col">
+          <div>
+            <div class="panel">
+              <div class="panel-head">
+                <h3>Filter progres per petak</h3>
+                <div class="legend"><span><i class="dot" style="background:#E4A377"></i>&lt;40%</span><span><i class="dot" style="background:#EDC262"></i>40–79%</span><span><i class="dot" style="background:#78BC98"></i>≥80%</span></div>
+              </div>
+              <div class="form-grid" style="margin-bottom:0;">
+                <div class="field" style="margin-bottom:0;"><label>BKPH</label><select id="filterBkph" onchange="renderAccordion()"><option value="">Semua BKPH (9)</option></select></div>
+                <div class="field" style="margin-bottom:0;"><label>Status</label><select id="filterStatus" onchange="renderAccordion()"><option value="">Semua status</option><option value="selesai">Selesai / tinggi (≥80%)</option><option value="berjalan">Berjalan (40–79%)</option><option value="belum">Rendah / belum mulai (&lt;40%)</option></select></div>
+                <div class="field" style="margin-bottom:0;"><label>Cari kode petak</label><input type="text" id="filterSearch" placeholder="Contoh: 12b" oninput="renderAccordion()"></div>
+              </div>
+            </div>
+            <div class="acc-actions">
+              <button class="btn-ghost" onclick="toggleAllAcc(true)">Buka semua BKPH</button>
+              <button class="btn-ghost" onclick="toggleAllAcc(false)">Tutup semua</button>
+            </div>
+            <div id="accRoot"></div>
+          </div>
+          <div>
+            <div class="panel">
+              <div class="panel-head"><h3>Realisasi vs target</h3><div class="legend"><span><i class="dot" style="background:var(--target);opacity:.55"></i>Target</span><span><i class="dot" style="background:var(--actual)"></i>Realisasi</span></div></div>
+              <div class="chart-box">
+                <div class="chart-col"><div class="bar-pair"><div class="bar target" style="height:60%"><span class="bar-val t-val">60%</span></div><div class="bar actual" style="height:40%"><span class="bar-val a-val">40%</span></div></div><span class="m">Feb</span></div>
+                <div class="chart-col"><div class="bar-pair"><div class="bar target" style="height:65%"><span class="bar-val t-val">65%</span></div><div class="bar actual" style="height:52%"><span class="bar-val a-val">52%</span></div></div><span class="m">Mar</span></div>
+                <div class="chart-col"><div class="bar-pair"><div class="bar target" style="height:68%"><span class="bar-val t-val">68%</span></div><div class="bar actual" style="height:58%"><span class="bar-val a-val">58%</span></div></div><span class="m">Apr</span></div>
+                <div class="chart-col"><div class="bar-pair"><div class="bar target" style="height:70%"><span class="bar-val t-val">70%</span></div><div class="bar actual" style="height:61%"><span class="bar-val a-val">61%</span></div></div><span class="m">Mei</span></div>
+                <div class="chart-col"><div class="bar-pair"><div class="bar target" style="height:70%"><span class="bar-val t-val">70%</span></div><div class="bar actual" style="height:63%"><span class="bar-val a-val">63%</span></div></div><span class="m">Jun</span></div>
+              </div>
+            </div>
+            <div class="panel">
+              <div class="panel-head"><h3>Target periode berjalan</h3></div>
+              <table><tr><th>BKPH</th><th>Target</th><th>Realisasi</th></tr>
+                <tbody id="targetPeriodeBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== PETA SEBARAN ===== -->
+      <div class="subview" id="dash-peta">
+        <div class="topbar"><div><h1>Peta sebaran</h1><p class="sub">Lokasi 9 BKPH KPH Kediri lengkap dengan koordinat GPS dan tingkat capaian</p></div></div>
+        <div class="map-wrap">
+          <div>
+            <div id="leafletMap"></div>
+            <p style="font-size:0.85rem; color:var(--ink-soft); margin-top:0.6rem;">Penanda menunjukkan titik koordinat wilayah kerja tiap BKPH — klik penanda untuk melihat luas dan realisasi. Titik GPS per petak dapat ditambahkan begitu perangkat GPS lapangan terhubung ke sistem.</p>
+          </div>
+          <div class="panel" style="margin-bottom:0;">
+            <div class="panel-head"><h3>Rekap wilayah &amp; koordinat GPS</h3></div>
+            <table id="gpsTable">
+              <tr><th>BKPH</th><th>Luas</th><th>Realisasi</th><th>GPS</th></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== TARGET PROGRES ===== -->
+      <div class="subview" id="dash-target">
+        <div class="topbar"><div><h1>Target progres</h1><p class="sub">Tetapkan target realisasi bulanan dalam jumlah pohon — persentase capaian dihitung otomatis begitu data realisasi lapangan masuk</p></div></div>
+        <div class="panel">
+          <div class="panel-head">
+            <h3>Target realisasi bulanan — Tahun 2026</h3>
+            <select style="width:auto;"><option>2026</option><option>2025</option></select>
+          </div>
+          <div class="target-year-legend">
+            <span><i style="background:var(--surface-alt); border:1px solid var(--line-strong);"></i>Bulan berlalu — realisasi sudah masuk, % dihitung otomatis</span>
+            <span><i style="background:var(--target-bg); border:1px solid #EFCFA0;"></i>Bulan berjalan</span>
+            <span><i style="background:var(--surface); border:1px solid var(--line-strong);"></i>Bulan mendatang — input target (pohon)</span>
+          </div>
+          <div class="target-year-wrap">
+            <table class="target-year-table">
+              <tr><th>BKPH</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th><th>Mei</th><th class="current">Jun</th><th>Jul</th><th>Agu</th><th>Sep</th><th>Okt</th><th>Nov</th><th>Des</th></tr>
+              <tbody id="targetYearBody"></tbody>
+            </table>
+          </div>
+          <p class="export-note" style="margin-top:0.8rem;">Kolom bulan berlalu/berjalan menampilkan <strong>persentase capaian</strong> (realisasi pohon ÷ target pohon), dihitung otomatis dari data yang diinput Asper/KRPH di menu Input Data Lapangan. Kolom bulan mendatang berisi <strong>input jumlah pohon</strong> yang ditargetkan KPH.</p>
+          <button class="btn-primary" style="margin-top:1.2rem; width:auto; padding-left:1.6rem; padding-right:1.6rem;" onclick="simpanTargetTahun()">Simpan perubahan target 2026</button>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h3>Rincian target per RPH</h3><span style="font-size:0.85rem; color:var(--ink-soft);">Pilih BKPH untuk mengatur target tiap RPH secara terpisah (dalam jumlah pohon)</span></div>
+          <div class="field" style="margin-bottom:1rem;"><label>BKPH</label><select id="targetBkphPick" onchange="renderTargetRph()"></select></div>
+          <div class="target-row" style="border-bottom:2px solid var(--line-strong); padding-top:0;"><span class="name" style="color:var(--ink-faint); font-size:0.78rem; text-transform:uppercase; letter-spacing:.03em;">RPH</span><span style="color:var(--ink-faint); font-size:0.78rem; text-transform:uppercase; letter-spacing:.03em;">Target pohon (Jun)</span><span style="color:var(--ink-faint); font-size:0.78rem; text-transform:uppercase; letter-spacing:.03em;">Realisasi → persentase</span></div>
+          <div id="targetRphList"></div>
+        </div>
+      </div>
+
+      <!-- ===== EXPORT LAPORAN (termasuk aktivitas input terbaru) ===== -->
+      <div class="subview" id="dash-export">
+        <div class="topbar"><div><h1>Export laporan</h1><p class="sub">Satu pusat unduh Excel (.xlsx) untuk seluruh rekap target vs realisasi KPH Kediri</p></div></div>
+        <div class="panel">
+          <div class="panel-head"><h3>Aktivitas input terbaru</h3></div>
+          <table>
+            <tr><th>Petak</th><th>RPH</th><th>Diinput oleh</th><th>Realisasi</th><th>Foto</th><th>Status</th></tr>
+            <tr><td class="mono">12b</td><td>Kalipang</td><td>Asper Kalipang</td><td>92%</td><td><span class="thumb-sq" style="background:#4E9C71;" onclick="openPhotoModal('12b','RPH Kalipang','BKPH Kediri','29 Jun 2026','Asper Kalipang')">📷</span></td><td><span class="badge ok">Valid</span></td></tr>
+            <tr><td class="mono">19c</td><td>Sugihan</td><td>KRPH Sugihan</td><td>85%</td><td><span class="thumb-sq" style="background:#E4A377;" onclick="openPhotoModal('19c','RPH Sugihan','BKPH Pace','28 Jun 2026','KRPH Sugihan')">📷</span></td><td><span class="badge ok">Valid</span></td></tr>
+            <tr><td class="mono">8a</td><td>Kanyoran</td><td>Asper Kanyoran</td><td>30%</td><td><span class="thumb-sq empty">—</span></td><td><span class="badge pending">Menunggu foto</span></td></tr>
+            <tr><td class="mono">5a</td><td>Bajulan</td><td>KRPH Bajulan</td><td>55%</td><td><span class="thumb-sq" style="background:#78BC98;" onclick="openPhotoModal('5a','RPH Bajulan','BKPH Pace','27 Jun 2026','KRPH Bajulan')">📷</span></td><td><span class="badge ok">Valid</span></td></tr>
+          </table>
+        </div>
+        <div class="export-hint">Semua export laporan (rekap KPH, per BKPH, per RPH, hingga per petak) diunduh dalam format Excel (.xlsx) dan kini terpusat di halaman ini — gunakan filter di bawah untuk menentukan cakupan datanya.</div>
+        <div class="panel">
+          <div class="panel-head"><h3>1. Cakupan laporan</h3></div>
+          <div class="form-grid" style="margin-bottom:1rem;">
+            <div class="field" style="margin-bottom:0;"><label>Tingkat</label><select id="expLevel"><option>Rekap seluruh KPH Kediri</option><option>Per BKPH</option><option>Per RPH</option><option>Per petak</option></select></div>
+            <div class="field" style="margin-bottom:0;"><label>BKPH</label><select id="expBkph"><option value="">Semua BKPH (9)</option></select></div>
+            <div class="field" style="margin-bottom:0;"><label>RPH</label><select id="expRph"><option value="">Semua RPH</option></select></div>
+          </div>
+          <div class="panel-head"><h3>2. Periode &amp; status</h3></div>
+          <div class="form-grid" style="margin-bottom:1.2rem;">
+            <div class="field" style="margin-bottom:0;"><label>Dari tanggal</label><input type="date" id="expFrom" value="2026-06-01"></div>
+            <div class="field" style="margin-bottom:0;"><label>Sampai tanggal</label><input type="date" id="expTo" value="2026-06-30"></div>
+            <div class="field" style="margin-bottom:0;"><label>Status</label><select id="expStatus"><option>Semua status</option><option>Selesai (≥80%)</option><option>Berjalan (40–79%)</option><option>Belum mulai (&lt;40%)</option></select></div>
+          </div>
+          <button class="btn-primary" style="width:auto; padding-left:1.8rem; padding-right:1.8rem;" onclick="unduhLaporan()">📊 Unduh laporan (.xlsx)</button>
+        </div>
+      </div>
+
+      <!-- ===== MANAJEMEN USER ===== -->
+      <div class="subview" id="dash-user">
+        <div class="topbar">
+          <div><h1>Manajemen user</h1><p class="sub">Kelola akun KRPH/Asper dan KPH yang memiliki akses sistem</p></div>
+          <button class="btn-primary" style="width:auto; padding:0.7rem 1.3rem;" onclick="tambahPengguna()">+ Tambah pengguna</button>
+        </div>
+        <div class="panel">
+          <table id="userTable">
+            <tr><th>Nama</th><th>Peran</th><th>Wilayah</th><th>Status</th><th></th></tr>
+            <tr><td><div class="user-row-name"><div class="av">AK</div>Asper Kalipang</div></td><td>KRPH / Asper</td><td>RPH Kalipang · BKPH Kediri</td><td><span class="badge ok">Aktif</span></td><td><button class="btn-ghost" onclick="toggleUserStatus(this)">Ubah</button></td></tr>
+            <tr><td><div class="user-row-name"><div class="av">KK</div>KRPH Kanyoran</div></td><td>KRPH / Asper</td><td>RPH Kanyoran · BKPH Kediri</td><td><span class="badge ok">Aktif</span></td><td><button class="btn-ghost" onclick="toggleUserStatus(this)">Ubah</button></td></tr>
+            <tr><td><div class="user-row-name"><div class="av">AB</div>Asper Bajulan</div></td><td>KRPH / Asper</td><td>RPH Bajulan · BKPH Pace</td><td><span class="badge ok">Aktif</span></td><td><button class="btn-ghost" onclick="toggleUserStatus(this)">Ubah</button></td></tr>
+            <tr><td><div class="user-row-name"><div class="av">KS</div>KRPH Sugihan</div></td><td>KRPH / Asper</td><td>RPH Sugihan · BKPH Pace</td><td><span class="badge pending">Nonaktif</span></td><td><button class="btn-ghost" onclick="toggleUserStatus(this)">Ubah</button></td></tr>
+            <tr><td><div class="user-row-name"><div class="av">AT</div>Asper Trenggalek</div></td><td>KRPH / Asper</td><td>RPH Trenggalek · BKPH Trenggalek</td><td><span class="badge ok">Aktif</span></td><td><button class="btn-ghost" onclick="toggleUserStatus(this)">Ubah</button></td></tr>
+            <tr><td><div class="user-row-name"><div class="av">SW</div>KPH Kediri</div></td><td>KPH</td><td>Seluruh wilayah (9 BKPH)</td><td><span class="badge ok">Aktif</span></td><td><button class="btn-ghost" onclick="toggleUserStatus(this)">Ubah</button></td></tr>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+</section>
+
+<!-- ============================================================ INPUT DATA (KRPH / ASPER) SHELL ============================================================ -->
+<section class="view" id="view-input">
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="brand-mark"><div class="stake"></div><span>SITALANG</span></div>
+      <div class="nav-group">
+        <p class="nav-label">Kerja lapangan</p>
+        <div class="nav-item" data-subi="progres"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Progres wilayah saya</div>
+        <div class="nav-item active" data-subi="input"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>Input data lapangan</div>
+        <div class="nav-item" data-subi="riwayat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12a9 9 0 109-9M3 12h6M3 12l3-3M3 12l3 3"/></svg>Riwayat input</div>
+      </div>
+      <div class="sidebar-foot">
+        <div class="user-chip"><div class="av">AK</div><div class="info"><p>Asper Kalipang</p><span>RPH Kalipang · BKPH Kediri</span></div></div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <!-- ===== PROGRES WILAYAH SAYA (termasuk dokumentasi foto per petak) ===== -->
+      <div class="subview" id="inp-progres">
+        <div class="topbar"><div><h1>Progres wilayah saya</h1><p class="sub">RPH Kalipang — ringkasan capaian petak yang menjadi tanggung jawab Anda. Ketuk kartu petak untuk melihat foto dokumentasi.</p></div></div>
+        <div class="cards-row">
+          <div class="metric-card"><p class="label">Jumlah petak</p><p class="value">3</p></div>
+          <div class="metric-card"><p class="label">Rata-rata realisasi</p><p class="value">75%</p><span class="delta up">target 70%</span></div>
+          <div class="metric-card"><p class="label">Petak selesai</p><p class="value">2</p></div>
+          <div class="metric-card"><p class="label">Perlu perbaikan data</p><p class="value">1</p><span class="delta warn">segera tindak lanjuti</span></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h3>Petak di RPH Kalipang</h3><span style="font-size:0.8rem; color:var(--ink-soft);">📷 = foto dokumentasi tersedia</span></div>
+          <div class="petak-row">
+            <div class="petak high clickable" onclick="openPhotoModal('12b','RPH Kalipang','BKPH Kediri','29 Jun 2026','Asper Kalipang')"><div class="fill" style="height:92%"></div><span class="code">12b</span><span class="pct">92%</span><svg class="cam" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="4" y="7" width="16" height="12" rx="2"/><path d="M9 7l1.5-2h3L15 7"/><circle cx="12" cy="13" r="3"/></svg></div>
+            <div class="petak mid clickable" onclick="openPhotoModal('15a','RPH Kalipang','BKPH Kediri','28 Jun 2026','Asper Kalipang')"><div class="fill" style="height:45%"></div><span class="code">15a</span><span class="pct">45%</span><svg class="cam" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="4" y="7" width="16" height="12" rx="2"/><path d="M9 7l1.5-2h3L15 7"/><circle cx="12" cy="13" r="3"/></svg></div>
+            <div class="petak high clickable" onclick="openPhotoModal('22c','RPH Kalipang','BKPH Kediri','27 Jun 2026','Asper Kalipang')"><div class="fill" style="height:88%"></div><span class="code">22c</span><span class="pct">88%</span><svg class="cam" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="4" y="7" width="16" height="12" rx="2"/><path d="M9 7l1.5-2h3L15 7"/><circle cx="12" cy="13" r="3"/></svg></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== INPUT DATA LAPANGAN ===== -->
+      <div class="subview active" id="inp-input">
+        <div class="topbar">
+          <div><h1>Input realisasi progres</h1><p class="sub">Naik talang tempurung — petak di wilayah kerja Anda</p></div>
+          <div class="date mono">30 Jun 2026</div>
+        </div>
+        <div class="grid-2col" style="grid-template-columns: 1.4fr 1fr;">
+          <div>
+            <div class="panel">
+              <div class="panel-head"><h3>Formulir input petak</h3></div>
+              <div class="form-grid">
+                <div class="field full" style="margin-bottom:0;"><label>BKPH</label><select><option>Kediri</option></select></div>
+                <div class="field" style="margin-bottom:0;"><label>RPH</label><select><option>Kalipang</option><option>Kanyoran</option></select></div>
+                <div class="field" style="margin-bottom:0;"><label>Petak</label><select id="petakSelectInput" onchange="onPetakChange()"><option value="15a">15a</option><option value="12b">12b</option><option value="22c">22c</option><option value="9b">9b (data belum valid)</option></select></div>
+                <div class="field full" style="margin-bottom:0;"><label>Mandor sadap / alur kerja</label><select><option>Mandor Slamet — Alur A</option><option>Mandor Yono — Alur B</option><option>Mandor Wahyu — Alur C</option></select></div>
+                <div class="field-inline">
+                  <div class="field"><label>Tanggal update</label><input type="date" value="2026-06-30"></div>
+                  <div class="target-badge" title="Target periode berjalan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Target: 70% — ditetapkan KPH untuk Juni 2026</div>
+                </div>
+                <div class="field capaian-block" style="margin-bottom:0;">
+                  <label>Capaian realisasi</label>
+                  <div class="capaian-grid">
+                    <div><label style="font-size:0.85rem; font-weight:500; color:var(--ink-soft);">Jumlah pohon terealisasi</label><input type="number" id="pohonRealisasi" placeholder="Contoh: 45" value="45" oninput="hitungCapaian()"></div>
+                    <div><label style="font-size:0.85rem; font-weight:500; color:var(--ink-soft);">Rencana pohon petak ini</label><div class="rencana-display mono" id="rencanaDisplay">100 pohon</div></div>
+                  </div>
+                  <span class="capaian-result" id="capaianHasil">Persentase Capaian: 45% (selisih -55 pohon dari rencana)</span>
+                </div>
+                <div class="field full" style="margin-bottom:0; grid-column:2/4;">
+                  <label>Dokumentasi foto <span style="color:var(--danger); font-weight:400;">(wajib)</span></label>
+                  <input type="file" id="fotoInputField" accept="image/*" style="display:none" onchange="onFotoSelected(this)">
+                  <div class="dropzone" id="dropzoneEl" onclick="document.getElementById('fotoInputField').click()">
+                    <span id="dropzoneText"><strong>Ketuk untuk unggah</strong> foto sampel pohon terpasang talang atau foto lembar Buku Saku Mandor (JPG/PNG, maks 5MB)</span>
+                  </div>
+                  <p id="fotoWarning" style="display:none; color:var(--danger); font-size:0.82rem; margin:0.5rem 0 0;">Foto dokumentasi wajib diunggah — data realisasi tanpa foto tidak dapat disimpan.</p>
+                </div>
+                <div class="field full" style="margin-bottom:0;"><label>Catatan lapangan (opsional)</label><textarea id="catatanLapangan" placeholder="Kendala, kondisi cuaca, atau keterangan tambahan"></textarea></div>
+                <div class="form-actions">
+                  <button class="btn-primary" style="width:auto; flex:1;" onclick="saveInputData()">Simpan data</button>
+                  <button class="btn-secondary" onclick="resetInputForm()">Batal</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="panel">
+              <div class="panel-head"><h3>Status input terakhir</h3></div>
+              <div class="status-card invalid">
+                <div class="icn"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 9v4M12 17h.01M10.3 3.9L2.7 17a2 2 0 001.7 3h15.2a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg></div>
+                <div id="statusCard9b"><h4>Petak 9b — data tidak valid</h4><p>Capaian 60% dimasukkan tanpa dokumentasi foto. Sistem menolak data realisasi yang tidak disertai foto lapangan.</p><div class="action"><button class="btn-ghost" onclick="fixPetak('9b')">Perbaiki data</button></div></div>
+              </div>
+              <div class="status-card valid">
+                <div class="icn"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6L9 17l-5-5"/></svg></div>
+                <div><h4>Petak 12b — tersimpan</h4><p>Realisasi 92% tercatat pada 29 Jun 2026, 16:20 WIB. Data telah masuk ke rekap RPH Kalipang.</p></div>
+              </div>
+            </div>
+            <div class="panel">
+              <div class="panel-head"><h3>Petak di RPH Kalipang</h3></div>
+              <button class="btn-export" onclick="alert('Mengekspor data Petak di RPH Kalipang ke file Excel (.xlsx)...')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+                Ekspor ke Excel (.xlsx)
+              </button>
+              <table><tr><th>Petak</th><th>Target</th><th>Realisasi</th><th>Status</th></tr>
+                <tr><td class="mono">12b</td><td class="mono">70%</td><td class="mono">92%</td><td><span class="status-label ok">Tersimpan</span></td></tr>
+                <tr><td class="mono">15a</td><td class="mono">70%</td><td class="mono">45%</td><td><span class="status-label ok">Tersimpan</span></td></tr>
+                <tr><td class="mono">22c</td><td class="mono">70%</td><td class="mono">88%</td><td><span class="status-label ok">Tersimpan</span></td></tr>
+                <tr><td class="mono">9b</td><td class="mono">70%</td><td class="mono">60%</td><td><span class="status-label bad">Tidak Valid</span></td></tr>
+              </table>
+              <p class="export-note">Terakhir diekspor ke Excel: Hari ini, 10:35 WIB</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== RIWAYAT INPUT (termasuk dokumentasi foto per inputan data) ===== -->
+      <div class="subview" id="inp-riwayat">
+        <div class="topbar"><div><h1>Riwayat input</h1><p class="sub">Semua data yang pernah Anda masukkan, lengkap dengan foto dokumentasi tiap inputan</p></div></div>
+        <div class="panel">
+          <div class="form-grid" style="margin-bottom:0;">
+            <div class="field" style="margin-bottom:0;"><label>Bulan</label><select id="filterRwBulan" onchange="renderRiwayatTable()"><option value="">Semua bulan</option><option value="Juni 2026">Juni 2026</option><option value="Mei 2026">Mei 2026</option></select></div>
+            <div class="field" style="margin-bottom:0;"><label>BKPH</label><select id="filterRwBkph" onchange="renderRiwayatTable()"><option value="">Semua BKPH</option><option value="Kediri">Kediri</option></select></div>
+            <div class="field" style="margin-bottom:0;"><label>RPH</label><select id="filterRwRph" onchange="renderRiwayatTable()"><option value="">Semua RPH</option><option value="Kalipang">Kalipang</option><option value="Kanyoran">Kanyoran</option></select></div>
+            <div class="field" style="margin-bottom:0;"><label>Petak</label><select id="filterRwPetak" onchange="renderRiwayatTable()"><option value="">Semua petak</option><option value="12b">12b</option><option value="15a">15a</option><option value="22c">22c</option><option value="9b">9b</option><option value="30x">30x</option></select></div>
+          </div>
+        </div>
+        <div class="panel">
+          <table id="riwayatTable">
+            <tr><th>Tanggal</th><th>BKPH</th><th>RPH</th><th>Petak</th><th>Capaian</th><th>Foto</th><th>Status</th></tr>
+          </table>
+          <p id="riwayatEmpty" style="display:none; text-align:center; color:var(--ink-soft); padding:1rem 0;">Tidak ada data yang cocok dengan filter.</p>
+        </div>
+      </div>
+    </main>
+  </div>
+</section>
+
+<!-- ============================================================ PHOTO MODAL (shared: progres per petak, riwayat input, dokumentasi foto) ============================================================ -->
+<div class="modal-mask" id="photoModal" onclick="if(event.target===this) closePhotoModal()">
+  <div class="modal-card">
+    <div class="modal-close"><button onclick="closePhotoModal()">✕</button></div>
+    <div class="modal-photo" id="photoModalThumb"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.6"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="12" cy="12" r="3.2"/></svg></div>
+    <div class="modal-body">
+      <h4 id="photoModalTitle">Petak —</h4>
+      <p id="photoModalRph">—</p>
+      <p id="photoModalDate">—</p>
+    </div>
+  </div>
+</div>
+
+<script>
+
+  const topButtons = document.querySelectorAll('.demo-switch > button[data-view]');
+  function switchTopView(name){
+    topButtons.forEach(b => b.classList.toggle('active', b.dataset.view === name));
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById('view-' + name).classList.add('active');
+    // Peta Leaflet butuh invalidateSize() setiap kali kontainernya kembali terlihat,
+    // kalau tidak ubin peta akan tampak kosong/abu-abu setelah berpindah tab lalu kembali.
+    if(name === 'dashboard'){
+      const petaSub = document.getElementById('dash-peta');
+      if(petaSub && petaSub.classList.contains('active')) setTimeout(initLeafletMap, 50);
+    }
+  }
+  topButtons.forEach(btn => btn.addEventListener('click', () => switchTopView(btn.dataset.view)));
+
+  function doLogin(){
+    const isKph = document.getElementById('role-kph').classList.contains('active');
+    switchTopView(isKph ? 'dashboard' : 'input');
+  }
+
+  document.querySelectorAll('.a11y-toggle button').forEach(btn => btn.addEventListener('click', () => {
+    document.querySelectorAll('.a11y-toggle button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.documentElement.classList.toggle('text-large', btn.dataset.size === 'large');
+  }));
+
+  const roleBtns = document.querySelectorAll('.role-toggle button');
+  roleBtns.forEach(btn => btn.addEventListener('click', () => {
+    roleBtns.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }));
+
+  function gotoDashSub(sub){
+    document.querySelectorAll('#view-dashboard .nav-item[data-sub]').forEach(i => i.classList.toggle('active', i.dataset.sub === sub));
+    document.querySelectorAll('#view-dashboard .subview').forEach(s => s.classList.remove('active'));
+    document.getElementById('dash-' + sub).classList.add('active');
+    if(sub === 'peta') setTimeout(initLeafletMap, 50);
+  }
+  document.querySelectorAll('#view-dashboard .nav-item[data-sub]').forEach(item => item.addEventListener('click', () => gotoDashSub(item.dataset.sub)));
+
+  function gotoInputSub(sub){
+    document.querySelectorAll('#view-input .nav-item[data-subi]').forEach(i => i.classList.toggle('active', i.dataset.subi === sub));
+    document.querySelectorAll('#view-input .subview').forEach(s => s.classList.remove('active'));
+    document.getElementById('inp-' + sub).classList.add('active');
+  }
+  document.querySelectorAll('#view-input .nav-item[data-subi]').forEach(item => item.addEventListener('click', () => gotoInputSub(item.dataset.subi)));
+
+  document.querySelectorAll('.choice').forEach(c => c.addEventListener('click', () => {
+    c.parentElement.querySelectorAll('.choice').forEach(x => x.classList.remove('selected'));
+    c.classList.add('selected');
+  }));
+
+  /* ============================================================ DATA WILAYAH KERJA — KPH KEDIRI (9 BKPH / 44 RPH) */
+  const KPH_DATA = [
+    { name:"Kediri", ha:12653.70, rph:[
+      {name:"Kalipang", ha:2531.00},{name:"Kanyoran", ha:3484.70},{name:"Pamongan", ha:1411.30},
+      {name:"Parang", ha:1776.60},{name:"Pojok", ha:1303.90},{name:"Sambiroto", ha:2146.20} ]},
+    { name:"Pace", ha:11614.14, rph:[
+      {name:"Bajulan", ha:1516.70},{name:"Gedangklutuk", ha:2281.80},{name:"Makuto", ha:2574.10},
+      {name:"Plangkat", ha:1837.06},{name:"Salam Judeg", ha:1923.18},{name:"Sugihan", ha:1481.30} ]},
+    { name:"Pare", ha:10001.49, rph:[
+      {name:"Besowo", ha:3537.59},{name:"Jatirejo", ha:2195.70},{name:"Kandangan", ha:908.20},
+      {name:"Manggis", ha:1434.40},{name:"Pandantoyo", ha:1925.60} ]},
+    { name:"Tulungagung", ha:14266.60, rph:[
+      {name:"Gondang", ha:2807.10},{name:"Jatiwekas", ha:1861.20},{name:"Karangrejo", ha:2253.00},
+      {name:"Pagerwejo", ha:5172.20},{name:"Sendang", ha:2173.10} ]},
+    { name:"Bandung", ha:16376.45, rph:[
+      {name:"Bandung", ha:2308.70},{name:"Besuki", ha:4448.60},{name:"Prigi", ha:5376.14},{name:"Watulimo", ha:4243.01} ]},
+    { name:"Dongko", ha:14786.77, rph:[
+      {name:"Banjar", ha:4065.65},{name:"Dongko Selatan", ha:2428.00},{name:"Dongko Utara", ha:2160.00},
+      {name:"Panggul", ha:3456.12},{name:"Sumberbening", ha:2676.30} ]},
+    { name:"Kampak", ha:15453.90, rph:[
+      {name:"Kampak Selatan", ha:3313.80},{name:"Kampak Utara", ha:2474.90},
+      {name:"Munjungan Barat", ha:3244.90},{name:"Munjungan Timur", ha:6420.30} ]},
+    { name:"Karangan", ha:10013.30, rph:[
+      {name:"Gandusari", ha:2394.10},{name:"Karangan", ha:2669.60},{name:"Pule", ha:2755.60},{name:"Tugu", ha:2194.00} ]},
+    { name:"Trenggalek", ha:12667.87, rph:[
+      {name:"Bendungan", ha:3740.69},{name:"Durenan", ha:3191.50},{name:"Sumurup", ha:2207.40},{name:"Trenggalek", ha:3528.28} ]},
+  ];
+  // Koordinat perkiraan wilayah kerja tiap BKPH (titik kantor/kecamatan acuan) — dapat diganti dengan koordinat presisi hasil survei GPS lapangan.
+  const BKPH_COORDS = {
+    "Kediri":[-7.8480,112.0178], "Pace":[-7.6167,111.9333], "Pare":[-7.7744,112.1928],
+    "Tulungagung":[-8.0645,111.9028], "Bandung":[-8.1500,111.7667], "Dongko":[-8.2100,111.6550],
+    "Kampak":[-8.2680,111.6120], "Karangan":[-8.0700,111.7800], "Trenggalek":[-8.0500,111.7167],
+  };
+  function hashNum(str){ let h=0; for(let i=0;i<str.length;i++){ h=(h*31+str.charCodeAt(i))>>>0; } return h; }
+  function pctFor(str,min,max){ return min + (hashNum(str) % (max-min+1)); }
+  function statusClass(p){ return p>=80?'high':(p>=40?'mid':'low'); }
+  function fmtHa(n){ return n.toLocaleString('id-ID',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+
+  function populateBkphSelects(){
+    const opts = KPH_DATA.map(b => `<option value="${b.name}">BKPH ${b.name}</option>`).join('');
+    ['filterBkph','expBkph','targetBkphPick'].forEach(id => {
+      const el = document.getElementById(id);
+      if(!el) return;
+      if(id === 'targetBkphPick'){ el.innerHTML = opts; } else { el.insertAdjacentHTML('beforeend', opts); }
+    });
+    const expBkph = document.getElementById('expBkph');
+    if(expBkph){
+      expBkph.addEventListener('change', () => {
+        const expRph = document.getElementById('expRph');
+        const b = KPH_DATA.find(x => x.name === expBkph.value);
+        expRph.innerHTML = '<option value="">Semua RPH</option>' + (b ? b.rph.map(r => `<option>RPH ${r.name}</option>`).join('') : '');
+      });
+    }
+  }
+
+  function petakSample(rphName, realisasi){
+    const codes = ['a','b','c'];
+    const n = 2 + (hashNum(rphName) % 2);
+    let html = '';
+    for(let i=0;i<n;i++){
+      const code = (i+8) + codes[i % 3];
+      const variance = (hashNum(rphName+code) % 21) - 10;
+      const p = Math.max(0, Math.min(100, realisasi + variance));
+      html += `<div class="petak ${statusClass(p)} clickable" onclick="openPhotoModal('${code}','RPH ${rphName}','','','')"><div class="fill" style="height:${p}%"></div><span class="code">${code}</span><span class="pct">${p}%</span><svg class="cam" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="4" y="7" width="16" height="12" rx="2"/><path d="M9 7l1.5-2h3L15 7"/><circle cx="12" cy="13" r="3"/></svg></div>`;
+    }
+    return html;
+  }
+
+  function renderAccordion(){
+    const root = document.getElementById('accRoot');
+    if(!root) return;
+    const fBkph = document.getElementById('filterBkph').value;
+    const fStatus = document.getElementById('filterStatus').value;
+    const fSearch = (document.getElementById('filterSearch').value || '').toLowerCase().trim();
+    let html = '';
+    KPH_DATA.forEach(b => {
+      if(fBkph && fBkph !== b.name) return;
+      const bReal = pctFor(b.name, 42, 91);
+      let rphHtml = '';
+      let anyRph = false;
+      b.rph.forEach(r => {
+        const rReal = pctFor(b.name + r.name, 30, 96);
+        const rClass = statusClass(rReal);
+        const passStatus = !fStatus || (fStatus==='selesai' && rReal>=80) || (fStatus==='berjalan' && rReal>=40 && rReal<80) || (fStatus==='belum' && rReal<40);
+        const passSearch = !fSearch || r.name.toLowerCase().includes(fSearch);
+        if(!passStatus || !passSearch) return;
+        anyRph = true;
+        rphHtml += `
+          <div class="acc-rph">
+            <div class="acc-rph-head" onclick="this.parentElement.classList.toggle('open')">
+              <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M9 6l6 6-6 6"/></svg>
+              <div class="rph-nm">RPH ${r.name}<small>${fmtHa(r.ha)} Ha</small></div>
+              <div class="bar-wrap"><div class="bar-bg"><div class="bar-fg" style="width:${rReal}%"></div></div></div>
+              <div class="tv">target 70% · real ${rReal}%</div>
+            </div>
+            <div class="acc-rph-body">${petakSample(r.name, rReal)}</div>
+          </div>`;
+      });
+      if(!anyRph) return;
+      html += `
+        <div class="acc-bkph">
+          <div class="acc-bkph-head" onclick="this.parentElement.classList.toggle('open')">
+            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M9 6l6 6-6 6"/></svg>
+            <div class="idn">${b.name.slice(0,2).toUpperCase()}</div>
+            <div class="nm"><h4>BKPH ${b.name}</h4><span>${fmtHa(b.ha)} Ha · ${b.rph.length} RPH</span></div>
+            <div class="bar-wrap"><div class="bar-bg"><div class="bar-fg" style="width:${bReal}%"></div></div><div class="lbl">real ${bReal}% / target 70%</div></div>
+            <div class="rphcount">${b.rph.length} RPH</div>
+          </div>
+          <div class="acc-bkph-body">${rphHtml}</div>
+        </div>`;
+    });
+    root.innerHTML = html || '<div class="panel" style="text-align:center; color:var(--ink-soft);">Tidak ada data yang cocok dengan filter.</div>';
+  }
+  function toggleAllAcc(open){
+    document.querySelectorAll('.acc-bkph').forEach(el => el.classList.toggle('open', open));
+  }
+
+  /* ============================================================ TARGET BULANAN — DALAM JUMLAH POHON
+     KPH menetapkan target sebagai JUMLAH POHON per bulan. Untuk bulan yang sudah berlalu/berjalan,
+     realisasi pohon (hasil agregat input lapangan Asper/KRPH) sudah tersedia, sehingga persentase
+     capaian (realisasi ÷ target × 100) bisa dihitung & ditampilkan otomatis. Untuk bulan mendatang,
+     realisasi belum ada — yang ditampilkan hanya input target pohon, menunggu data lapangan masuk. */
+  const MONTHS = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+  const CURRENT_MONTH_INDEX = 5; // Jun 2026
+
+  function targetPohonFor(bkphName, monthIndex){
+    const anchor = 420 + (hashNum(bkphName) % 640); // basis target bulanan per BKPH (pohon)
+    const growth = 1 + monthIndex * 0.028; // target sedikit naik tiap bulan
+    return Math.round(anchor * growth / 5) * 5; // dibulatkan ke kelipatan 5
+  }
+  function realisasiPohonFor(bkphName, monthIndex, target){
+    // hanya berlaku utk bulan yang sudah berlalu/berjalan — tren capaian naik mendekati bulan berjalan
+    const pct = pctFor(bkphName + 'real' + monthIndex, 46 + monthIndex * 4, 68 + monthIndex * 3);
+    return Math.round(target * Math.min(pct, 100) / 100);
+  }
+
+  function renderTargetYearTable(){
+    const body = document.getElementById('targetYearBody');
+    if(!body) return;
+    let html = '';
+    KPH_DATA.forEach(b => {
+      let row = `<tr><td>${b.name}</td>`;
+      for(let m = 0; m < 12; m++){
+        const target = targetPohonFor(b.name, m);
+        const isCurrent = m === CURRENT_MONTH_INDEX;
+        const isPast = m < CURRENT_MONTH_INDEX;
+        if(isPast || isCurrent){
+          const real = realisasiPohonFor(b.name, m, target);
+          const pct = target > 0 ? Math.round((real / target) * 100) : 0;
+          row += `<td class="locked${isCurrent ? ' current' : ''}"><div class="cell-pct">${pct}%</div><div class="cell-sub">${real}/${target} pohon</div></td>`;
+        } else {
+          row += `<td><div class="cell-pohon-input"><input type="number" value="${target}" data-bkph="${b.name}" data-month="${m}" onchange="onTargetPohonChange(this)"><span class="unit-sm">pohon</span></div></td>`;
+        }
+      }
+      row += `</tr>`;
+      html += row;
+    });
+    body.innerHTML = html;
+  }
+
+  function onTargetPohonChange(input){
+    // placeholder simpan-di-memori untuk demo; nilai akan dikirim saat "Simpan perubahan target" ditekan
+    input.value = Math.max(0, parseInt(input.value) || 0);
+  }
+
+  function renderTargetRph(){
+    const bkph = document.getElementById('targetBkphPick').value;
+    const b = KPH_DATA.find(x => x.name === bkph);
+    const list = document.getElementById('targetRphList');
+    if(!b || !list) return;
+    list.innerHTML = b.rph.map(r => {
+      const target = 90 + (hashNum('rpht' + b.name + r.name) % 160);
+      const targetRounded = Math.round(target / 5) * 5;
+      const hasRealisasi = true; // RPH di bulan berjalan (Jun) — realisasi sudah ada
+      if(hasRealisasi){
+        const real = Math.round(targetRounded * pctFor('rphr' + b.name + r.name, 50, 92) / 100);
+        const pct = targetRounded > 0 ? Math.round((real / targetRounded) * 100) : 0;
+        return `<div class="target-row">
+          <span class="name">RPH ${r.name}</span>
+          <div class="target-pohon-field"><input type="number" value="${targetRounded}"><span class="unit">pohon</span></div>
+          <span class="realisasi-note">${real} pohon → <strong>${pct}%</strong></span>
+        </div>`;
+      }
+      return `<div class="target-row">
+        <span class="name">RPH ${r.name}</span>
+        <div class="target-pohon-field"><input type="number" value="${targetRounded}"><span class="unit">pohon</span></div>
+        <span class="realisasi-note pending">Menunggu data realisasi</span>
+      </div>`;
+    }).join('');
+  }
+
+  let leafletMapInstance = null;
+  function initLeafletMap(){
+    if(typeof L === 'undefined') return;
+    const el = document.getElementById('leafletMap');
+    if(!el) return;
+    if(!leafletMapInstance){
+      leafletMapInstance = L.map('leafletMap').setView([-7.98, 111.85], 9);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution:'© OpenStreetMap' }).addTo(leafletMapInstance);
+      KPH_DATA.forEach(b => {
+        const coord = BKPH_COORDS[b.name];
+        if(!coord) return;
+        const real = pctFor(b.name, 42, 91);
+        const color = real>=80?'#4E9C71':(real>=40?'#D6A227':'#C86A3C');
+        const marker = L.circleMarker(coord, { radius:9, color:'#12291D', weight:1.5, fillColor:color, fillOpacity:0.9 }).addTo(leafletMapInstance);
+        marker.bindPopup(`<b>BKPH ${b.name}</b><br>${fmtHa(b.ha)} Ha · ${b.rph.length} RPH<br>Realisasi rata-rata: ${real}%<br><span style="font-family:'JetBrains Mono',monospace;">${coord[0].toFixed(4)}, ${coord[1].toFixed(4)}</span>`);
+      });
+    } else {
+      leafletMapInstance.invalidateSize();
+    }
+    const table = document.getElementById('gpsTable');
+    if(table && table.rows.length <= 1){
+      KPH_DATA.forEach(b => {
+        const coord = BKPH_COORDS[b.name];
+        const real = pctFor(b.name, 42, 91);
+        const row = table.insertRow();
+        row.innerHTML = `<td>${b.name}</td><td class="mono">${fmtHa(b.ha)} Ha</td><td class="mono">${real}%</td><td><span class="gps-chip">${coord[0].toFixed(4)}, ${coord[1].toFixed(4)}</span></td>`;
+      });
+    }
+  }
+
+  function openPhotoModal(code, rph, bkph, date, user){
+    document.getElementById('photoModalTitle').textContent = 'Petak ' + code;
+    document.getElementById('photoModalRph').textContent = [rph, bkph].filter(Boolean).join(' · ') || 'Wilayah kerja';
+    document.getElementById('photoModalDate').textContent = (date && user) ? (date + ' · diunggah oleh ' + user) : 'Foto dokumentasi lapangan';
+    const colors = ['#4E9C71','#78BC98','#E4A377','#EDC262'];
+    document.getElementById('photoModalThumb').style.background = colors[hashNum(code) % colors.length];
+    document.getElementById('photoModal').classList.add('open');
+  }
+  function closePhotoModal(){ document.getElementById('photoModal').classList.remove('open'); }
+
+  // Rencana (jumlah pohon rencana) per petak — dipakai untuk menghitung persentase
+  // capaian dari selisih antara realisasi (input pengguna) dan rencana (nilai tetap petak).
+  const PETAK_RENCANA = { '15a':100, '12b':100, '22c':100, '9b':100 };
+
+  function onPetakChange(){
+    const sel = document.getElementById('petakSelectInput');
+    const rencanaEl = document.getElementById('rencanaDisplay');
+    if(!sel || !rencanaEl) return;
+    const rencana = PETAK_RENCANA[sel.value] || 100;
+    rencanaEl.textContent = `${rencana} pohon`;
+    hitungCapaian();
+  }
+
+  function hitungCapaian(){
+    const realEl = document.getElementById('pohonRealisasi');
+    const sel = document.getElementById('petakSelectInput');
+    const out = document.getElementById('capaianHasil');
+    if(!realEl || !out) return;
+    const real = parseFloat(realEl.value) || 0;
+    const rencana = PETAK_RENCANA[sel ? sel.value : '15a'] || 100;
+    const pct = rencana > 0 ? Math.round((real / rencana) * 100) : 0;
+    const selisih = real - rencana;
+    const selisihTxt = selisih >= 0 ? `+${selisih}` : `${selisih}`;
+    out.textContent = `Persentase Capaian: ${pct}% (selisih ${selisihTxt} pohon dari rencana)`;
+  }
+
+  // Data riwayat input — dipakai oleh filter Bulan / BKPH / RPH / Petak
+  const RIWAYAT_DATA = [
+    { tanggal:'29 Jun 2026', bulan:'Juni 2026', bkph:'Kediri', rph:'Kalipang', petak:'12b', capaian:92, foto:'#4E9C71', status:'ok' },
+    { tanggal:'28 Jun 2026', bulan:'Juni 2026', bkph:'Kediri', rph:'Kalipang', petak:'9b', capaian:60, foto:null, status:'bad' },
+    { tanggal:'27 Jun 2026', bulan:'Juni 2026', bkph:'Kediri', rph:'Kalipang', petak:'22c', capaian:88, foto:'#78BC98', status:'ok' },
+    { tanggal:'20 Jun 2026', bulan:'Juni 2026', bkph:'Kediri', rph:'Kalipang', petak:'15a', capaian:40, foto:'#E4A377', status:'ok' },
+    { tanggal:'15 Jun 2026', bulan:'Juni 2026', bkph:'Kediri', rph:'Kanyoran', petak:'30x', capaian:55, foto:'#EDC262', status:'ok' },
+    { tanggal:'12 Mei 2026', bulan:'Mei 2026', bkph:'Kediri', rph:'Kalipang', petak:'15a', capaian:30, foto:null, status:'bad' },
+  ];
+
+  function renderRiwayatTable(){
+    const table = document.getElementById('riwayatTable');
+    const empty = document.getElementById('riwayatEmpty');
+    if(!table) return;
+    const fBulan = document.getElementById('filterRwBulan').value;
+    const fBkph = document.getElementById('filterRwBkph').value;
+    const fRph = document.getElementById('filterRwRph').value;
+    const fPetak = document.getElementById('filterRwPetak').value;
+    while(table.rows.length > 1) table.deleteRow(1);
+    const filtered = RIWAYAT_DATA.filter(d =>
+      (!fBulan || d.bulan === fBulan) &&
+      (!fBkph || d.bkph === fBkph) &&
+      (!fRph || d.rph === fRph) &&
+      (!fPetak || d.petak === fPetak)
+    );
+    filtered.forEach(d => {
+      const row = table.insertRow();
+      const fotoCell = d.foto
+        ? `<span class="thumb-sq" style="background:${d.foto};" onclick="openPhotoModal('${d.petak}','RPH ${d.rph}','BKPH ${d.bkph}','${d.tanggal}','Asper Kalipang')">📷</span>`
+        : `<span class="thumb-sq empty">—</span>`;
+      const statusCell = d.status === 'ok'
+        ? `<span class="badge ok">Valid</span>`
+        : `<span class="badge bad">Tidak valid</span>`;
+      row.innerHTML = `<td>${d.tanggal}</td><td>${d.bkph}</td><td>RPH ${d.rph}</td><td class="mono">${d.petak}</td><td class="mono">${d.capaian}%</td><td>${fotoCell}</td><td>${statusCell}</td>`;
+    });
+    empty.style.display = filtered.length ? 'none' : 'block';
+  }
+
+  /* ============================================================ FORMULIR INPUT — validasi foto wajib, simpan, batal, perbaiki data */
+  let fotoUploaded = false;
+
+  function onFotoSelected(input){
+    const dz = document.getElementById('dropzoneEl');
+    const txt = document.getElementById('dropzoneText');
+    if(input.files && input.files.length){
+      fotoUploaded = true;
+      txt.innerHTML = `✅ <strong>${input.files[0].name}</strong> — ketuk untuk mengganti foto`;
+      dz.style.borderColor = 'var(--primary-light)';
+      document.getElementById('fotoWarning').style.display = 'none';
+    }
+  }
+
+  function resetInputForm(){
+    fotoUploaded = false;
+    document.getElementById('fotoInputField').value = '';
+    document.getElementById('dropzoneText').innerHTML = '<strong>Ketuk untuk unggah</strong> foto sampel pohon terpasang talang atau foto lembar Buku Saku Mandor (JPG/PNG, maks 5MB)';
+    document.getElementById('dropzoneEl').style.borderColor = '';
+    document.getElementById('fotoWarning').style.display = 'none';
+    document.getElementById('catatanLapangan').value = '';
+    const realEl = document.getElementById('pohonRealisasi');
+    if(realEl) realEl.value = '';
+    hitungCapaian();
+  }
+
+  function fixPetak(code){
+    switchTopView('input');
+    gotoInputSub('input');
+    const sel = document.getElementById('petakSelectInput');
+    sel.value = code;
+    onPetakChange();
+    resetInputForm();
+    const realEl = document.getElementById('pohonRealisasi');
+    realEl.value = 60; // nilai capaian yang sebelumnya ditolak, tinggal dilengkapi fotonya
+    hitungCapaian();
+    realEl.focus();
+    document.getElementById('fotoWarning').style.display = 'block';
+    document.getElementById('fotoWarning').textContent = 'Lengkapi dengan foto dokumentasi lapangan, lalu simpan ulang data Petak 9b.';
+  }
+
+  function saveInputData(){
+    const sel = document.getElementById('petakSelectInput');
+    const realEl = document.getElementById('pohonRealisasi');
+    const warn = document.getElementById('fotoWarning');
+    const petak = sel.value;
+    const real = parseFloat(realEl.value);
+
+    if(!real && real !== 0){
+      alert('Isi jumlah pohon terealisasi terlebih dahulu.');
+      realEl.focus();
+      return;
+    }
+    if(!fotoUploaded){
+      // Sesuai aturan sistem: realisasi tanpa foto dokumentasi lapangan ditolak.
+      warn.style.display = 'block';
+      document.getElementById('dropzoneEl').style.borderColor = 'var(--danger)';
+      return;
+    }
+
+    const rencana = PETAK_RENCANA[petak] || 100;
+    const pct = rencana > 0 ? Math.round((real / rencana) * 100) : 0;
+    const dateEl = document.querySelector('#inp-input input[type=date]');
+    const tanggal = dateEl && dateEl.value ? new Date(dateEl.value).toLocaleDateString('id-ID', { day:'2-digit', month:'short', year:'numeric' }) : '30 Jun 2026';
+
+    // 1. Perbarui/masukkan ke riwayat input
+    const existing = RIWAYAT_DATA.find(d => d.petak === petak && d.bulan === 'Juni 2026');
+    const entry = { tanggal, bulan:'Juni 2026', bkph:'Kediri', rph:'Kalipang', petak, capaian:pct, foto:'#4E9C71', status:'ok' };
+    if(existing) Object.assign(existing, entry); else RIWAYAT_DATA.unshift(entry);
+    renderRiwayatTable();
+
+    // 2. Jika ini perbaikan Petak 9b, hilangkan kartu "data tidak valid"
+    if(petak === '9b'){
+      const card = document.getElementById('statusCard9b');
+      if(card && card.closest('.status-card')) card.closest('.status-card').remove();
+    }
+
+    // 3. Tambahkan kartu status "tersimpan" di panel Status input terakhir
+    const panel = document.querySelector('#inp-input .status-card').closest('.panel');
+    const card = document.createElement('div');
+    card.className = 'status-card valid';
+    card.innerHTML = `<div class="icn"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6L9 17l-5-5"/></svg></div><div><h4>Petak ${petak} — tersimpan</h4><p>Realisasi ${pct}% (${real} pohon) tercatat pada ${tanggal}. Data telah masuk ke rekap RPH Kalipang.</p></div>`;
+    panel.insertBefore(card, panel.querySelector('.panel-head').nextSibling);
+
+    alert(`Data Petak ${petak} tersimpan: ${real} pohon dari rencana ${rencana} pohon (${pct}%).`);
+    resetInputForm();
+  }
+
+  /* ============================================================ TARGET TAHUNAN — simpan perubahan (demo, tersimpan di memori) */
+  function simpanTargetTahun(){
+    const inputs = document.querySelectorAll('#targetYearBody input[type=number]');
+    alert(`Perubahan target pohon untuk ${inputs.length} kolom bulan mendatang telah disimpan.`);
+  }
+
+  /* ============================================================ EXPORT LAPORAN — ringkasan cakupan sesuai filter yang dipilih */
+  function unduhLaporan(){
+    const level = document.getElementById('expLevel').value;
+    const bkph = document.getElementById('expBkph').value || 'Semua BKPH';
+    const rph = document.getElementById('expRph').value || 'Semua RPH';
+    const from = document.getElementById('expFrom').value;
+    const to = document.getElementById('expTo').value;
+    const status = document.getElementById('expStatus').value;
+    alert(`Mengekspor laporan (.xlsx)\nTingkat: ${level}\nWilayah: ${bkph} · ${rph}\nPeriode: ${from} s/d ${to}\nStatus: ${status}`);
+  }
+
+  /* ============================================================ MANAJEMEN USER — tambah & ubah status (demo, tersimpan di memori) */
+  function tambahPengguna(){
+    const nama = prompt('Nama pengguna baru:');
+    if(!nama) return;
+    const isKph = confirm('Klik OK untuk peran KPH, atau Batal untuk peran KRPH / Asper.');
+    const wilayah = prompt('Wilayah kerja (contoh: RPH Kalipang · BKPH Kediri):', isKph ? 'Seluruh wilayah (9 BKPH)' : '');
+    const table = document.getElementById('userTable');
+    const row = table.insertRow();
+    const initials = nama.trim().split(/\s+/).map(w => w[0]).join('').slice(0,2).toUpperCase();
+    row.innerHTML = `<td><div class="user-row-name"><div class="av">${initials}</div>${nama}</div></td><td>${isKph ? 'KPH' : 'KRPH / Asper'}</td><td>${wilayah || '—'}</td><td><span class="badge ok">Aktif</span></td><td><button class="btn-ghost" onclick="toggleUserStatus(this)">Ubah</button></td>`;
+  }
+  function toggleUserStatus(btn){
+    const badge = btn.closest('tr').querySelector('.badge');
+    const isActive = badge.classList.contains('ok');
+    badge.classList.toggle('ok', !isActive);
+    badge.classList.toggle('pending', isActive);
+    badge.textContent = isActive ? 'Nonaktif' : 'Aktif';
+  }
+
+  /* ============================================================ KONSISTENSI DATA — panel "Target periode berjalan" & kartu
+     "Rata-rata realisasi" kini memakai rumus pctFor(nama BKPH,42,91) yang SAMA dengan yang dipakai
+     accordion "Filter progres per petak" dan peta sebaran, supaya angka realisasi BKPH yang sama
+     tidak berbeda-beda di tiap panel dashboard. */
+  function renderTargetPeriodeTable(){
+    const body = document.getElementById('targetPeriodeBody');
+    if(!body) return;
+    body.innerHTML = KPH_DATA.map(b => {
+      const real = pctFor(b.name, 42, 91);
+      return `<tr><td>${b.name}</td><td class="mono">70%</td><td class="mono">${real}%</td></tr>`;
+    }).join('');
+  }
+  function renderAvgRealisasi(){
+    const vals = KPH_DATA.map(b => pctFor(b.name, 42, 91));
+    const avg = Math.round(vals.reduce((a,c) => a+c, 0) / vals.length);
+    const valEl = document.getElementById('avgRealisasiValue');
+    const deltaEl = document.getElementById('avgRealisasiDelta');
+    if(valEl) valEl.textContent = avg + '%';
+    if(deltaEl){
+      deltaEl.textContent = 'target bulan ini 70%';
+      deltaEl.className = 'delta ' + (avg >= 70 ? 'up' : 'warn');
+    }
+  }
+
+  populateBkphSelects();
+  renderAccordion();
+  renderTargetYearTable();
+  renderTargetRph();
+  renderTargetPeriodeTable();
+  renderAvgRealisasi();
+  onPetakChange();
+  renderRiwayatTable();
+</script>
+
+
+</body>
+</html>
